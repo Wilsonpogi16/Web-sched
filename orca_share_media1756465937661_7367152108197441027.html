@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ACSHS Scheduler</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial; background: white; margin: 0; }
+    header { background: blue; color: white; text-align: center; padding: 15px; }
+    .container { max-width: 900px; margin: 20px auto; padding: 20px; border: 2px solid black; border-radius: 8px; background: lightyellow; }
+    h2 { color: darkblue; }
+    h3 { color: darkgreen; }
+    input,textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid gray; border-radius: 5px; background: lightcyan; }
+    button { background: green; color: white; border: none; padding: 8px 14px; border-radius: 5px; cursor: pointer; }
+    button:hover { background: darkgreen; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th,td { border: 1px solid gray; padding: 8px; }
+    th { background: orange; }
+    tr:nth-child(even){background: lightblue;}
+    tr:nth-child(odd){background: lightgreen;}
+    .hidden { display: none; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; }
+    #adminPanel { background: lavender; padding: 10px; }
+    #studentPanel { background: mistyrose; padding: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ACSHS Scheduler</h1>
+    <p>Grade 12 ICT Students</p>
+  </header>
+
+  <!-- LOGIN -->
+  <div class="container" id="loginSection">
+    <h2 style="color: darkred;">Login</h2>
+    <button style="background: blue;" onclick="setRole('admin')">Login as Admin</button>
+    <button style="background: purple;" onclick="setRole('student')">Login as Student</button>
+    <div id="studentBox" class="hidden">
+      <label>Student ID</label>
+      <input id="studentID" type="text" placeholder="Example: ICT2025" />
+      <button style="background: darkorange;" onclick="login()">Continue</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="container hidden" id="mainSection">
+    <div class="topbar">
+      <h2 id="welcomeMsg"></h2>
+      <button style="background: red;" onclick="goBack()">Back</button>
+    </div>
+
+    <!-- Admin form -->
+    <div id="adminPanel" class="hidden">
+      <h3>Group Schedule (Admin)</h3>
+      <form onsubmit="save('group',this);return false;">
+        <input placeholder="Title" name="title" required>
+        <textarea placeholder="Description" name="desc"></textarea>
+        <input type="date" name="date" required>
+        <input type="time" name="time" required>
+        <button type="submit">Save Schedule</button>
+      </form>
+    </div>
+
+    <!-- Group schedule -->
+    <h3>Group Schedule</h3>
+    <table>
+      <thead><tr><th>Title</th><th>Description</th><th>Date</th><th>Time</th></tr></thead>
+      <tbody id="groupBody"><tr><td colspan="4">No schedules yet.</td></tr></tbody>
+    </table>
+
+    <!-- Student form -->
+    <div id="studentPanel" class="hidden">
+      <h3>My Personal Schedule</h3>
+      <form onsubmit="save('personal_'+studentID,this);return false;">
+        <input placeholder="Task Title" name="title" required>
+        <input type="date" name="date" required>
+        <input type="time" name="time" required>
+        <button type="submit" style="background: darkblue;">Save Task</button>
+      </form>
+      <table>
+        <thead><tr><th>Task</th><th>Date</th><th>Time</th></tr></thead>
+        <tbody id="personalBody"><tr><td colspan="3">No tasks yet.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+  let role=null, studentID=null;
+
+  function setRole(r){
+    role=r;
+    if(r==="student") document.getElementById("studentBox").classList.remove("hidden");
+    else login();
+  }
+
+  function login(){
+    if(role==="student"){
+      let id=document.getElementById("studentID").value.trim();
+      if(!id.match(/^[A-Za-z0-9]+$/)){ alert("Letters and numbers only!"); return; }
+      studentID=id;
+    }
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("mainSection").classList.remove("hidden");
+    document.getElementById("welcomeMsg").textContent= role==="admin"?"Welcome Admin":"Welcome "+studentID;
+    if(role==="admin") document.getElementById("adminPanel").classList.remove("hidden");
+    if(role==="student") document.getElementById("studentPanel").classList.remove("hidden");
+    load("group","groupBody");
+    if(role==="student") load("personal_"+studentID,"personalBody");
+  }
+
+  function goBack(){
+    document.getElementById("mainSection").classList.add("hidden");
+    document.getElementById("loginSection").classList.remove("hidden");
+    role=null; studentID=null;
+    document.getElementById("studentBox").classList.add("hidden");
+    document.getElementById("studentID").value="";
+    document.getElementById("adminPanel").classList.add("hidden");
+    document.getElementById("studentPanel").classList.add("hidden");
+  }
+
+  function save(key,form){
+    let item={};
+    for(let el of form.elements){ if(el.name) item[el.name]=el.value; }
+    let list=JSON.parse(localStorage.getItem(key)||"[]");
+    list.push(item);
+    localStorage.setItem(key,JSON.stringify(list));
+    form.reset();
+    load(key,key.includes("personal")?"personalBody":"groupBody");
+  }
+
+  function load(key,tbodyId){
+    let list=JSON.parse(localStorage.getItem(key)||"[]");
+    let body=document.getElementById(tbodyId);
+    body.innerHTML="";
+    if(!list.length){ body.innerHTML="<tr><td colspan='"+body.parentElement.querySelectorAll('th').length+"'>No schedules yet.</td></tr>"; return; }
+    list.forEach(x=>{
+      body.innerHTML+= "<tr>"+Object.values(x).map(v=>"<td>"+v+"</td>").join("")+"</tr>";
+    });
+  }
+</script>
+</body>
+</html>
